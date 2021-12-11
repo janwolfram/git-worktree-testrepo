@@ -3,6 +3,7 @@ import argparse, os
 
 def setupArgparse(branches):
     parser = argparse.ArgumentParser(description="Checkout your project branches", prefix_chars='-+')
+    parser.add_argument("--deploy", action="store_true", help="set deploy branches to current status")
 
     # automatically create flags from branches.txt
     group = parser.add_mutually_exclusive_group()
@@ -19,14 +20,35 @@ def setupArgparse(branches):
 
 
 def createDeployBranch(branch_name, src_path):
-    # create local deploy branch
     cmd = "cd {}{} ; git checkout -b {}_deploy ; git checkout {} ; cd .. ; cd ..; git worktree add deploy/{}_deploy".format(src_path, branch_name, branch_name, branch_name, branch_name)
     os.system(cmd)
 
 
-def handleFlags(flags):
-    print(flags)
-    for branch_name in flags:
+def updateDeployBranches(src_path):
+    os.chdir(src_path)
+    my_branches = os.listdir(os.getcwd())
+    for branch in my_branches:
+        cmd = "cd {} && git pull".format(branch)
+        os.system(cmd)
+
+    os.chdir("../deploy")
+    my_deploy_branches = os.listdir(os.getcwd())
+    for deploy_branch in my_deploy_branches:
+        parent_branch = deploy_branch[:-7]
+        cmd = "cd {} ; git rebase {}".format(deploy_branch, parent_branch)
+        os.system(cmd)
+
+
+def handleFlags(flags, branches):
+    if flags["deploy"]:
+        # update deploy branches
+        if "src" in os.path.dirname(os.getcwd()) or "deploy" in os.path.dirname(os.getcwd()):
+            updateDeployBranches("../../src")
+        else:    
+            updateDeployBranches("src/")
+
+    for branch_name in branches:
+        print(branch_name)
         # checkout branches
         if flags[branch_name] == 1:
             if "src" in os.path.dirname(os.getcwd()) or "deploy" in os.path.dirname(os.getcwd()):
@@ -48,12 +70,11 @@ def handleFlags(flags):
 
            
 def main():
-    branches = open("branches","r").read().splitlines()
+    branches = open("branches", "r").read().splitlines()
     args = setupArgparse(branches)
-    print(args)
     # arguments to dict
     flags = vars(args)
-    handleFlags(flags)
+    handleFlags(flags, branches)
 
     
 if __name__ == '__main__':
