@@ -43,19 +43,18 @@ def handleFlags(flags, branches):
     if flags["deploy"]:
         # update deploy branches
         if "src" in os.path.dirname(os.getcwd()) or "deploy" in os.path.dirname(os.getcwd()):
-            updateDeployBranches("../../src")
+            updateDeployBranches("../../src/")
         else:    
             updateDeployBranches("src/")
 
     for branch_name in branches:
-        print(branch_name)
         # checkout branches
         if flags[branch_name] == 1:
             if "src" in os.path.dirname(os.getcwd()) or "deploy" in os.path.dirname(os.getcwd()):
                 cmd = "cd ..; cd ..; git worktree add src/{}".format(branch_name)
                 os.system(cmd)
                 # create local deploy branch
-                createDeployBranch(branch_name, "../../src")
+                createDeployBranch(branch_name, "../../src/")
                 
             else:    
                 cmd = "git worktree add src/{}".format(branch_name)
